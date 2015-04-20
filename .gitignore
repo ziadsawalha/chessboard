@@ -1,0 +1,6 @@
+*.pyc
+*.swp
+*.DS_Store
+.coverage
+.tox
+chessboard.egg-info
