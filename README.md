@@ -1,4 +1,4 @@
-# Chessboard
+# Chessboard [![Build Status](https://travis-ci.org/checkmate/chessboard.png)](https://travis-ci.org/checkmate/chessboard)
 
 ## Overview
 
