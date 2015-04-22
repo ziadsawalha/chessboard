@@ -108,7 +108,8 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 
 * All features or bug fixes **must be tested** by one or more tests.
 * All modues and methods **must be documented**.
-* All code must pass **PEP-8, PEP-257, and flake8** checks with any exceptions explicitely noted and justified.
+* All code must pass **PEP-8, PEP-257, flake8** checks with any exceptions explicitly noted and justified.
+* Follow the OpenStack Hacking Guidelines as documented in [HACKING.rst][hacking] and automated in our style tests using the `hacking` module.
 
 ## <a name="commit"></a> Git Commit Guidelines
 
@@ -173,3 +174,5 @@ Note: inspired by and lifted with gratitude from [AngularJS](http://www.angularj
 [checkmate-hackers]: https://groups.google.com/forum/#!forum/checkmate-hackers
 [github]: https://github.com/checkmate/chessboard
 [commit-message-format]: https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y/edit#
+[hacking]: HACKING.rst
+
