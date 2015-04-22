@@ -1,7 +1,7 @@
-"""Chessboard.
+"""Chessboard: Describe an application once, deploy and manage it anywhere.
 
-Model application topologies and deploy applications in a
-provider-agnostic way.
+Chessboard includes utilities for modeling application topologies and
+deploying/managing applications in a provider-agnostic way.
 """
 
 import setuptools
@@ -14,8 +14,7 @@ setuptools.setup(
     version=VERSION,
     maintainer='Rackspace Hosting, Inc.',
     url='https://github.com/checkmate/chessboard',
-    description=('Model application topologies and deploy application in a '
-                 'provider-agnostic way'),
+    description='Describe an application once, deploy and manage it anywhere',
     platforms=['any'],
     packages=setuptools.find_packages(
         exclude=['chessboard.tests', 'chessboard.tests.*']
