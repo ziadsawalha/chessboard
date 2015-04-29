@@ -85,3 +85,18 @@ topology:
 
 More complex blueprint examples are available in the [checkmate-blueprints](https://github.com/checkmate-blueprints) org on github.
 
+### Server, API, GUI, `git push`, etc...
+The current suite of Checkmate tools consists of a command-line tool (CLI) called `pawn`, a server called `checkmate`, and an optional UI overlay to the API called `rook`.
+
+The CLI should be able to operate by itself, but the server will be needed to share and manage state through a REST API for manipulating deployments. The API will support JSON and YAML interchangeably.
+
+The server will use [SpiffWorkflow](https://github.com/knipknap/SpiffWorkflow) to orchestrate deployment operations. It will also provides *integrations* with:
+
+- **git** (clone, push, pull):
+
+    `git clone http://localhost:8080/deployments/fa4b67.git`
+
+- **knife** if your app includes Chef cookbooks. Set your chef org URL to the deployment's URL and ...
+
+   `knife node list`
+
