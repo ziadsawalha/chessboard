@@ -1,0 +1,10 @@
+# DRAFT: pending checkmate/chessboard/issues/9
+components:
+  web:
+    description: A simple app for demonstration purposes
+    commands:
+      start: python hello.py $APP_PORT
+    requires:
+    - runtime: python>=2.5  # includes wsgiref
+    provides:
+    - application: http
