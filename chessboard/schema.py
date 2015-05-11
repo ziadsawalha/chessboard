@@ -172,7 +172,6 @@ RELATION_SCHEMA = volup.Schema({
 })
 
 
-
 def Relation(msg=None, coerce=False):
     """Validate a relation (coerce shorthand to long form).
 
@@ -278,6 +277,10 @@ BLUEPRINT_SCHEMA = volup.Schema({
 CHECKMATEFILE_SCHEMA = volup.Schema({
     volup.Required('blueprint'): BLUEPRINT_SCHEMA,
     # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
+    volup.Optional('environment'): object,
+    volup.Optional('inputs'): object,
+    volup.Optional('flavors'): object,
+    volup.Optional('include'): object,
 })
 
 
