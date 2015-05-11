@@ -210,10 +210,10 @@ SERVICE_SCHEMA = volup.Schema({
 
 #: Schema for `blueprint`
 BLUEPRINT_SCHEMA = volup.Schema({
-    volup.Required('id'): str,
-    volup.Required('name'): str,
+    volup.Optional('id'): str,
+    volup.Optional('name'): str,
     volup.Required('services'): DictOf(SERVICE_SCHEMA),
-    volup.Required('version'): str,
+    volup.Optional('version'): str,
     volup.Optional('description'): str,
     # The `source` field would (most likely) never be written by a blueprint
     # author directly.

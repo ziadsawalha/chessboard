@@ -186,10 +186,7 @@ class TestCheckmatefileSchema(unittest.TestCase):
             parser.load(fileobj, schema=cb_schema.CHECKMATEFILE_SCHEMA)
 
         expected_message = """\
-['blueprint']['id']: required key not provided
-['blueprint']['name']: required key not provided
 ['blueprint']['services']: required key not provided
-['blueprint']['version']: required key not provided
 ['test']: extra keys not allowed"""
         self.assertEqual(expected_message, mve.exception.message)
 
