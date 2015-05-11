@@ -128,6 +128,20 @@ def Coerce(type, msg=None):
     return f
 
 
+class RequireOneInvalid(volup.Invalid):
+
+    """At least one of a required set of keys is missing from a dict."""
+
+
+def RequireOne(keys):
+    """Validate that at least on of the supplied keys exists on a dict."""
+    def check(val):
+        if any(([k in val for k in keys])):
+            return
+        raise RequireOneInvalid("one of '%s' is required" % ', '.join(keys))
+    return check
+
+
 def coerce_dict(existing, changed):
     """Coerce existing dict with new values without losing the reference."""
     existing.clear()

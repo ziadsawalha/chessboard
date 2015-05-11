@@ -123,6 +123,24 @@ class TestDictOf(unittest.TestCase):
                              [str(x) for x in mi.exception.path])
 
 
+class TestRequireOne(unittest.TestCase):
+
+    """Tests for :func:`chessboard.schema.RequireOne`."""
+
+    def test_valid(self):
+        schema = cb_schema.RequireOne(['a', 'b'])
+        schema({'a': 1})
+        schema({'b': 1})
+        schema({'a': 1, 'b': 2})
+
+    def test_invalid(self):
+        schema = cb_schema.RequireOne(['a', 'b'])
+        with self.assertRaises(cb_schema.RequireOneInvalid):
+            schema({'x': 1})
+        with self.assertRaises(cb_schema.RequireOneInvalid):
+            schema({})
+
+
 class TestCheckmatefileSchema(unittest.TestCase):
 
     """Main tests for the Checkmatefile schema definition."""
