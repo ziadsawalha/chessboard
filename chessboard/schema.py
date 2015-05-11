@@ -147,6 +147,11 @@ def coerce_dict(existing, changed):
     existing.clear()
     existing.update(changed)
 
+
+def schema_from_list(keys_list):
+    """Generate a schema from a list of keys."""
+    return Schema(dict((key, object) for key in keys_list))
+
 ######################
 # Schema definitions #
 ######################
@@ -246,16 +251,24 @@ CONSTRAINT_SCHEMA = volup.Schema({
     volup.Optional('regex'): str,
 })
 
+# The values that can be supplied under `component` in a service
+COMPONENT_SELECTOR_SCHEMA_FIELDS = volup.Schema({
+    volup.Optional('id'): volup.All(str, volup.Length(min=3, max=32)),
+    volup.Optional('name'): str,
+    volup.Optional('interface'): volup.Any('*', *INTERFACE_TYPES),
+    volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
+    volup.Optional('role'): str,
+    volup.Optional('constraints'): [dict],
+})
+COMPONENT_SELECTOR_SCHEMA = volup.All(
+    volup.Schema(COMPONENT_SELECTOR_SCHEMA_FIELDS),
+    RequireOne(['id', 'name', 'resource_type'])
+)
+
 
 #: Schema for a member of `blueprint` -> `services`
 SERVICE_SCHEMA = volup.Schema({
-    volup.Required('component'): volup.Schema({
-        volup.Required('interface'): volup.Any('*', *INTERFACE_TYPES),
-        volup.Required('resource_type'): volup.Any('*', *RESOURCE_TYPES),
-        volup.Optional('role'): str,
-        volup.Optional('name'): str,
-        volup.Optional('constraints'): [dict],
-    }),
+    volup.Required('component'): COMPONENT_SELECTOR_SCHEMA,
     # TODO(larsbutler): need to be more specific
     volup.Optional('relations'): [Relation()],
     volup.Optional('constraints'): [CONSTRAINT_SCHEMA],
