@@ -237,6 +237,8 @@ CONSTRAINT_SCHEMA = volup.Schema({
     # Checkmatefiles where this is missing.
     volup.Optional('value'): volup.Any(bool, float, int, str),
     volup.Optional('message'): str,
+    # Used to apply the constraint to a specific provider
+    volup.Optional('provider'): str,
     # Optional constraint operators:
     volup.Optional('greater-than'): Coerce(str),
     volup.Optional('less-than'): Coerce(str),
