@@ -215,3 +215,93 @@ class TestCheckmatefileSchema(unittest.TestCase):
 
             self.assertEqual("['blueprint']['id']: expected str",
                              str(mve.exception))
+
+
+class TestRelationSchema(unittest.TestCase):
+
+    """Test Relation schema."""
+
+    def test_relations(self):
+        obj = yaml.safe_load("""
+        relations:
+        - db: mysql
+        - cache: redis#objects
+        - service: foo
+          interface: varnish
+          connect-from: sessions
+          connect-to: persistent
+          attributes:
+            timeout: 300
+        """)
+        unchanged = [o.copy() for o in obj['relations']]
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = cb_schema.validate(obj['relations'], _schema)
+        self.assertFalse(errors)
+        # Check that coercion did not get applied
+        self.assertEqual(unchanged, obj['relations'])
+
+    def test_relations_coerce(self):
+        obj = yaml.safe_load("""
+        relations:
+        - db: mysql
+        - cache: redis#objects
+        - service: foo
+          interface: varnish
+          connect-from: sessions
+          connect-to: persistent
+          attributes:
+            timeout: 300
+        """)
+        _schema = volup.Schema([cb_schema.Relation(coerce=True)])
+        cb_schema.validate(obj['relations'], _schema)
+        expected = {
+            'relations': [
+                {
+                    'service': 'db',
+                    'interface': 'mysql',
+                }, {
+                    'service': 'cache',
+                    'interface': 'redis',
+                    'connect-from': 'objects',
+                }, {
+                    'service': 'foo',
+                    'interface': 'varnish',
+                    'connect-from': 'sessions',
+                    'connect-to': 'persistent',
+                    'attributes': {
+                        'timeout': 300
+                    },
+                },
+            ]
+        }
+        self.assertEqual(obj, expected)
+
+    def test_relations_negative_dict(self):
+        """Ensure dict format is not allowed."""
+        obj = yaml.safe_load("""
+        relations:
+        - pages:
+            service: cache
+            interface: memcache
+        """)
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = cb_schema.validate(obj['relations'], _schema)
+        self.assertEqual(errors, ["invalid list value @ data[0]"])
+
+    def test_relations_negative_service(self):
+        """Ensure 'service' is required."""
+        obj = yaml.safe_load("""
+        relations:
+        - connect-to: test
+          interface: mysql  # No service
+        """)
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = cb_schema.validate(obj['relations'], _schema)
+        expected = [
+            "required key not provided @ data[0]['service']",
+        ]
+        self.assertEqual(errors, expected)
+
+
+if __name__ == '__main__':
+    unittest.main()

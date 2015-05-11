@@ -128,6 +128,11 @@ def Coerce(type, msg=None):
     return f
 
 
+def coerce_dict(existing, changed):
+    """Coerce existing dict with new values without losing the reference."""
+    existing.clear()
+    existing.update(changed)
+
 ######################
 # Schema definitions #
 ######################
@@ -166,6 +171,43 @@ RELATION_SCHEMA = volup.Schema({
     volup.Optional('attributes'): dict,
 })
 
+
+
+def Relation(msg=None, coerce=False):
+    """Validate a relation (coerce shorthand to long form).
+
+    Supported formats:
+
+    -   {service: interface}
+    -   {service: interface#tag}
+    -   or long form (see RELATION_SCHEMA)
+    """
+    def check(entry):
+        if not isinstance(entry, dict):
+            raise volup.Invalid('not a valid relation entry')
+        if len(entry) == 1:
+            key, value = entry.items()[0]
+            if not isinstance(value, basestring):
+                raise volup.Invalid('not a valid relation value')
+
+            # shorthand (type: interface and optional connection source)
+            if '#' in value:
+                interface, hashtag = value.split('#')[0:2]
+                changed = {
+                    'service': key,
+                    'interface': interface,
+                    'connect-from': hashtag,
+                }
+            else:
+                changed = {'service': key, 'interface': value}
+            if coerce:
+                coerce_dict(entry, changed)
+            else:
+                entry = changed
+        return RELATION_SCHEMA(entry)
+    return check
+
+
 # TODO(larsbutler): This is the "long form" of constraint structure.
 # We need to define the "short form" which is:
 #   {<setting>: <value>}, where <setting> is the `setting` name and <value> is
@@ -202,7 +244,7 @@ SERVICE_SCHEMA = volup.Schema({
         volup.Optional('constraints'): [dict],
     }),
     # TODO(larsbutler): need to be more specific
-    volup.Optional('relations'): [RELATION_SCHEMA],
+    volup.Optional('relations'): [Relation()],
     volup.Optional('constraints'): [CONSTRAINT_SCHEMA],
     volup.Optional('display-name'): str,
 })
@@ -237,3 +279,24 @@ CHECKMATEFILE_SCHEMA = volup.Schema({
     volup.Required('blueprint'): BLUEPRINT_SCHEMA,
     # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
 })
+
+
+def validate(obj, schema):
+    """Validate an object.
+
+    :param obj: a dict of the object to validate
+    :param schema: a schema to validate against (usually from this file)
+
+    :returns: list (contains errors if they exist)
+    """
+    errors = []
+    if obj:
+        if schema:
+            try:
+                schema(obj)
+            except volup.MultipleInvalid as exc:
+                for error in exc.errors:
+                    errors.append(str(error))
+            except volup.Invalid as exc:
+                errors.append(str(exc))
+    return errors
