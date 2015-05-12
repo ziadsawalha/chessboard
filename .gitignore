@@ -4,3 +4,4 @@
 .coverage
 .tox
 chessboard.egg-info
+docs/_build
