@@ -254,17 +254,30 @@ CONSTRAINT_SCHEMA = volup.Schema({
     volup.Optional('regex'): str,
 })
 
-# The values that can be supplied under `component` in a service
+# These are the values that can be supplied under `component` in a service:
 COMPONENT_SELECTOR_SCHEMA_FIELDS = volup.Schema({
+    # Explicitely selecting a component by the provider-supplied `id`
+    # Ex. `id: rsCloudLB` explicitely selects a Rackspac Cloud Load Balancer
     volup.Optional('id'): volup.All(str, volup.Length(min=3, max=32)),
+    # Selecting a component by the well-known application name (ex. wordpress)
     volup.Optional('name'): str,
+    # Selecting a component that supports a well-known interface
     volup.Optional('interface'): volup.Any('*', *INTERFACE_TYPES),
+    # Selecting a component by its type (ex. database)
     volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
+    # Selecting a component by role (ex. slave vs, master)
     volup.Optional('role'): str,
+    # Selecting a component with constraints (ex. os == 'CentOS 6.5')
     volup.Optional('constraints'): [dict],
 })
 COMPONENT_SELECTOR_SCHEMA = volup.All(
     volup.Schema(COMPONENT_SELECTOR_SCHEMA_FIELDS),
+    # At least one of id, name, or resource_type is required. Without one of
+    # these, the conditions will be too ambiguous to select a suitable
+    # component. See individual field comments above on what each of these
+    # means.
+    # TODO(zns): if resource_type is supplied, then we should also require
+    # interface
     RequireOne(['id', 'name', 'resource_type'])
 )
 
