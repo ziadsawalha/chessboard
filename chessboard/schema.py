@@ -14,6 +14,7 @@
 
 """Schema definition and validation utils for the Checkmatefile structure."""
 
+import six
 import voluptuous as volup
 
 ###########################
@@ -204,8 +205,8 @@ def Relation(msg=None, coerce=False):
         if not isinstance(entry, dict):
             raise volup.Invalid('not a valid relation entry')
         if len(entry) == 1:
-            key, value = entry.items()[0]
-            if not isinstance(value, basestring):
+            [(key, value)] = entry.items()
+            if not isinstance(value, six.string_types):
                 raise volup.Invalid('not a valid relation value')
 
             # shorthand (type: interface and optional connection source)
