@@ -253,7 +253,7 @@ class TestRelationSchema(unittest.TestCase):
         """)
         unchanged = [o.copy() for o in obj['relations']]
         _schema = volup.Schema([cb_schema.Relation()])
-        errors = cb_schema.validate(obj['relations'], _schema)
+        errors = inspect(obj['relations'], _schema)
         self.assertFalse(errors)
         # Check that coercion did not get applied
         self.assertEqual(unchanged, obj['relations'])
@@ -271,7 +271,7 @@ class TestRelationSchema(unittest.TestCase):
             timeout: 300
         """)
         _schema = volup.Schema([cb_schema.Relation(coerce=True)])
-        cb_schema.validate(obj['relations'], _schema)
+        inspect(obj['relations'], _schema)
         expected = {
             'relations': [
                 {
@@ -303,7 +303,7 @@ class TestRelationSchema(unittest.TestCase):
             interface: memcache
         """)
         _schema = volup.Schema([cb_schema.Relation()])
-        errors = cb_schema.validate(obj['relations'], _schema)
+        errors = inspect(obj['relations'], _schema)
         self.assertEqual(errors, ["invalid list value @ data[0]"])
 
     def test_relations_negative_service(self):
@@ -314,11 +314,29 @@ class TestRelationSchema(unittest.TestCase):
           interface: mysql  # No service
         """)
         _schema = volup.Schema([cb_schema.Relation()])
-        errors = cb_schema.validate(obj['relations'], _schema)
+        errors = inspect(obj['relations'], _schema)
         expected = [
             "required key not provided @ data[0]['service']",
         ]
         self.assertEqual(errors, expected)
+
+
+def inspect(obj, schema):
+    """Inspect an in-memory object against a schema.
+
+    :param obj: a dict of the object to validate
+    :param schema: a schema to validate against (usually from this file)
+
+    :returns: list (contains errors if they exist)
+    """
+    errors = []
+    if schema:
+        try:
+            schema(obj)
+        except volup.MultipleInvalid as exc:
+            for error in exc.errors:
+                errors.append(str(error))
+    return errors
 
 
 if __name__ == '__main__':

@@ -311,24 +311,3 @@ CHECKMATEFILE_SCHEMA = volup.Schema({
     volup.Optional('flavors'): object,
     volup.Optional('include'): object,
 })
-
-
-def validate(obj, schema):
-    """Validate an object.
-
-    :param obj: a dict of the object to validate
-    :param schema: a schema to validate against (usually from this file)
-
-    :returns: list (contains errors if they exist)
-    """
-    errors = []
-    if obj:
-        if schema:
-            try:
-                schema(obj)
-            except volup.MultipleInvalid as exc:
-                for error in exc.errors:
-                    errors.append(str(error))
-            except volup.Invalid as exc:
-                errors.append(str(exc))
-    return errors
