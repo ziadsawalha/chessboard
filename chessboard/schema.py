@@ -149,10 +149,6 @@ def coerce_dict(existing, changed):
     existing.update(changed)
 
 
-def schema_from_list(keys_list):
-    """Generate a schema from a list of keys."""
-    return Schema(dict((key, object) for key in keys_list))
-
 ######################
 # Schema definitions #
 ######################
