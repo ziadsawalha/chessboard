@@ -14,6 +14,7 @@
 
 """Schema definition and validation utils for the Checkmatefile structure."""
 
+import six
 import voluptuous as volup
 
 ###########################
@@ -128,6 +129,26 @@ def Coerce(type, msg=None):
     return f
 
 
+class RequireOneInvalid(volup.Invalid):
+
+    """At least one of a required set of keys is missing from a dict."""
+
+
+def RequireOne(keys):
+    """Validate that at least on of the supplied keys exists on a dict."""
+    def check(val):
+        if any(([k in val for k in keys])):
+            return
+        raise RequireOneInvalid("one of '%s' is required" % ', '.join(keys))
+    return check
+
+
+def coerce_dict(existing, changed):
+    """Coerce existing dict with new values without losing the reference."""
+    existing.clear()
+    existing.update(changed)
+
+
 ######################
 # Schema definitions #
 ######################
@@ -166,6 +187,42 @@ RELATION_SCHEMA = volup.Schema({
     volup.Optional('attributes'): dict,
 })
 
+
+def Relation(msg=None, coerce=False):
+    """Validate a relation (coerce shorthand to long form).
+
+    Supported formats:
+
+    -   {service: interface}
+    -   {service: interface#tag}
+    -   or long form (see RELATION_SCHEMA)
+    """
+    def check(entry):
+        if not isinstance(entry, dict):
+            raise volup.Invalid('not a valid relation entry')
+        if len(entry) == 1:
+            [(key, value)] = entry.items()
+            if not isinstance(value, six.string_types):
+                raise volup.Invalid('not a valid relation value')
+
+            # shorthand (type: interface and optional connection source)
+            if '#' in value:
+                interface, hashtag = value.split('#')[0:2]
+                changed = {
+                    'service': key,
+                    'interface': interface,
+                    'connect-from': hashtag,
+                }
+            else:
+                changed = {'service': key, 'interface': value}
+            if coerce:
+                coerce_dict(entry, changed)
+            else:
+                entry = changed
+        return RELATION_SCHEMA(entry)
+    return check
+
+
 # TODO(larsbutler): This is the "long form" of constraint structure.
 # We need to define the "short form" which is:
 #   {<setting>: <value>}, where <setting> is the `setting` name and <value> is
@@ -177,6 +234,8 @@ CONSTRAINT_SCHEMA = volup.Schema({
     # Checkmatefiles where this is missing.
     volup.Optional('value'): volup.Any(bool, float, int, str),
     volup.Optional('message'): str,
+    # Used to apply the constraint to a specific provider
+    volup.Optional('provider'): str,
     # Optional constraint operators:
     volup.Optional('greater-than'): Coerce(str),
     volup.Optional('less-than'): Coerce(str),
@@ -191,18 +250,40 @@ CONSTRAINT_SCHEMA = volup.Schema({
     volup.Optional('regex'): str,
 })
 
+# These are the values that can be supplied under `component` in a service:
+COMPONENT_SELECTOR_SCHEMA_FIELDS = volup.Schema({
+    # Explicitly selecting a component by the provider-supplied `id`
+    # Ex. `id: rsCloudLB` explicitely selects a Rackspace Cloud Load Balancer
+    volup.Optional('id'): volup.All(str, volup.Length(min=3, max=32)),
+    # Selecting a component by the well-known application name (ex. wordpress)
+    volup.Optional('name'): str,
+    # Selecting a component that supports a well-known interface (this also
+    # requires resource_type)
+    volup.Optional('interface'): volup.Any('*', *INTERFACE_TYPES),
+    # Selecting a component by its type (ex. database)
+    volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
+    # Selecting a component by role (ex. slave vs, master)
+    volup.Optional('role'): str,
+    # Selecting a component with constraints (ex. os == 'CentOS 6.5')
+    volup.Optional('constraints'): [dict],
+})
+COMPONENT_SELECTOR_SCHEMA = volup.All(
+    volup.Schema(COMPONENT_SELECTOR_SCHEMA_FIELDS),
+    # At least one of id, name, or resource_type is required. Without one of
+    # these, the conditions will be too ambiguous to select a suitable
+    # component. See individual field comments above on what each of these
+    # means.
+    # TODO(zns): if resource_type is supplied, then we should also require
+    # interface
+    RequireOne(['id', 'name', 'resource_type'])
+)
+
 
 #: Schema for a member of `blueprint` -> `services`
 SERVICE_SCHEMA = volup.Schema({
-    volup.Required('component'): volup.Schema({
-        volup.Required('interface'): volup.Any('*', *INTERFACE_TYPES),
-        volup.Required('resource_type'): volup.Any('*', *RESOURCE_TYPES),
-        volup.Optional('role'): str,
-        volup.Optional('name'): str,
-        volup.Optional('constraints'): [dict],
-    }),
+    volup.Required('component'): COMPONENT_SELECTOR_SCHEMA,
     # TODO(larsbutler): need to be more specific
-    volup.Optional('relations'): [RELATION_SCHEMA],
+    volup.Optional('relations'): [Relation()],
     volup.Optional('constraints'): [CONSTRAINT_SCHEMA],
     volup.Optional('display-name'): str,
 })
@@ -210,10 +291,10 @@ SERVICE_SCHEMA = volup.Schema({
 
 #: Schema for `blueprint`
 BLUEPRINT_SCHEMA = volup.Schema({
-    volup.Required('id'): str,
-    volup.Required('name'): str,
+    volup.Optional('id'): str,
+    volup.Optional('name'): str,
     volup.Required('services'): DictOf(SERVICE_SCHEMA),
-    volup.Required('version'): str,
+    volup.Optional('version'): str,
     volup.Optional('description'): str,
     # The `source` field would (most likely) never be written by a blueprint
     # author directly.
@@ -236,4 +317,8 @@ BLUEPRINT_SCHEMA = volup.Schema({
 CHECKMATEFILE_SCHEMA = volup.Schema({
     volup.Required('blueprint'): BLUEPRINT_SCHEMA,
     # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
+    volup.Optional('environment'): object,
+    volup.Optional('inputs'): object,
+    volup.Optional('flavors'): object,
+    volup.Optional('include'): object,
 })

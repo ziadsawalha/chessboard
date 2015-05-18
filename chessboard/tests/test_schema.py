@@ -123,6 +123,26 @@ class TestDictOf(unittest.TestCase):
                              [str(x) for x in mi.exception.path])
 
 
+class TestRequireOne(unittest.TestCase):
+
+    """Tests for :func:`chessboard.schema.RequireOne`."""
+
+    def test_valid(self):
+        """Test RequireOne passes valid data."""
+        schema = cb_schema.RequireOne(['a', 'b'])
+        schema({'a': 1})
+        schema({'b': 1})
+        schema({'a': 1, 'b': 2})
+
+    def test_invalid(self):
+        """Test RequireOne fails invalid data."""
+        schema = cb_schema.RequireOne(['a', 'b'])
+        with self.assertRaises(cb_schema.RequireOneInvalid):
+            schema({'x': 1})
+        with self.assertRaises(cb_schema.RequireOneInvalid):
+            schema({})
+
+
 class TestCheckmatefileSchema(unittest.TestCase):
 
     """Main tests for the Checkmatefile schema definition."""
@@ -186,10 +206,7 @@ class TestCheckmatefileSchema(unittest.TestCase):
             parser.load(fileobj, schema=cb_schema.CHECKMATEFILE_SCHEMA)
 
         expected_message = """\
-['blueprint']['id']: required key not provided
-['blueprint']['name']: required key not provided
 ['blueprint']['services']: required key not provided
-['blueprint']['version']: required key not provided
 ['test']: extra keys not allowed"""
         self.assertEqual(expected_message, mve.exception.message)
 
@@ -218,3 +235,119 @@ class TestCheckmatefileSchema(unittest.TestCase):
 
             self.assertEqual("['blueprint']['id']: expected str",
                              str(mve.exception))
+
+
+class TestRelationSchema(unittest.TestCase):
+
+    """Test Relation schema."""
+
+    def test_relations(self):
+        """Test Relation() passes valid relations unchanged."""
+        obj = yaml.safe_load("""
+        relations:
+        - db: mysql
+        - cache: redis#objects
+        - service: foo
+          interface: varnish
+          connect-from: sessions
+          connect-to: persistent
+          attributes:
+            timeout: 300
+        """)
+        unchanged = [o.copy() for o in obj['relations']]
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = inspect(obj['relations'], _schema)
+        self.assertFalse(errors)
+        # Check that coercion did not get applied
+        self.assertEqual(unchanged, obj['relations'])
+
+    def test_relations_coerce(self):
+        """Test Relation() coerces relations when requested."""
+        obj = yaml.safe_load("""
+        relations:
+        - db: mysql
+        - cache: redis#objects
+        - service: foo
+          interface: varnish
+          connect-from: sessions
+          connect-to: persistent
+          attributes:
+            timeout: 300
+        """)
+        _schema = volup.Schema([cb_schema.Relation(coerce=True)])
+        inspect(obj['relations'], _schema)
+        expected = {
+            'relations': [
+                {
+                    'service': 'db',
+                    'interface': 'mysql',
+                }, {
+                    'service': 'cache',
+                    'interface': 'redis',
+                    'connect-from': 'objects',
+                }, {
+                    'service': 'foo',
+                    'interface': 'varnish',
+                    'connect-from': 'sessions',
+                    'connect-to': 'persistent',
+                    'attributes': {
+                        'timeout': 300
+                    },
+                },
+            ]
+        }
+        self.assertEqual(obj, expected)
+
+    def test_relations_negative_dict(self):
+        """Ensure dict not allowed as value."""
+        obj = yaml.safe_load("""
+        relations:
+        - pages:
+            service: cache
+            interface: memcache
+        """)
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = inspect(obj['relations'], _schema)
+        self.assertEqual(errors, ["invalid list value @ data[0]"])
+
+    def test_relations_negative_type(self):
+        """Ensure invalid types are not allowed."""
+        _schema = volup.Schema(cb_schema.Relation())
+        errors = inspect("string", _schema)
+        self.assertEqual(errors, ["not a valid relation entry"])
+
+    def test_relations_negative_service(self):
+        """Ensure 'service' is required."""
+        obj = yaml.safe_load("""
+        relations:
+        - connect-to: test
+          interface: mysql  # No service
+        """)
+        _schema = volup.Schema([cb_schema.Relation()])
+        errors = inspect(obj['relations'], _schema)
+        expected = [
+            "required key not provided @ data[0]['service']",
+        ]
+        self.assertEqual(errors, expected)
+
+
+def inspect(obj, schema):
+    """Inspect an in-memory object against a schema.
+
+    :param obj: a dict of the object to validate
+    :param schema: a schema to validate against (usually from this file)
+
+    :returns: list (contains errors if they exist)
+    """
+    errors = []
+    if schema:
+        try:
+            schema(obj)
+        except volup.MultipleInvalid as exc:
+            for error in exc.errors:
+                errors.append(str(error))
+    return errors
+
+
+if __name__ == '__main__':
+    unittest.main()
