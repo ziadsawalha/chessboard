@@ -310,6 +310,12 @@ class TestRelationSchema(unittest.TestCase):
         errors = inspect(obj['relations'], _schema)
         self.assertEqual(errors, ["invalid list value @ data[0]"])
 
+    def test_relations_negative_type(self):
+        """Ensure invalid types are not allowed."""
+        _schema = volup.Schema(cb_schema.Relation())
+        errors = inspect("string", _schema)
+        self.assertEqual(errors, ["not a valid relation entry"])
+
     def test_relations_negative_service(self):
         """Ensure 'service' is required."""
         obj = yaml.safe_load("""
