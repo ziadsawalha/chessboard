@@ -128,12 +128,14 @@ class TestRequireOne(unittest.TestCase):
     """Tests for :func:`chessboard.schema.RequireOne`."""
 
     def test_valid(self):
+        """Test RequireOne passes valid data."""
         schema = cb_schema.RequireOne(['a', 'b'])
         schema({'a': 1})
         schema({'b': 1})
         schema({'a': 1, 'b': 2})
 
     def test_invalid(self):
+        """Test RequireOne fails invalid data."""
         schema = cb_schema.RequireOne(['a', 'b'])
         with self.assertRaises(cb_schema.RequireOneInvalid):
             schema({'x': 1})
@@ -240,6 +242,7 @@ class TestRelationSchema(unittest.TestCase):
     """Test Relation schema."""
 
     def test_relations(self):
+        """Test Relation() passes valid relations unchanged."""
         obj = yaml.safe_load("""
         relations:
         - db: mysql
@@ -259,6 +262,7 @@ class TestRelationSchema(unittest.TestCase):
         self.assertEqual(unchanged, obj['relations'])
 
     def test_relations_coerce(self):
+        """Test Relation() coerces relations when requested."""
         obj = yaml.safe_load("""
         relations:
         - db: mysql
@@ -295,7 +299,7 @@ class TestRelationSchema(unittest.TestCase):
         self.assertEqual(obj, expected)
 
     def test_relations_negative_dict(self):
-        """Ensure dict format is not allowed."""
+        """Ensure dict not allowed as value."""
         obj = yaml.safe_load("""
         relations:
         - pages:

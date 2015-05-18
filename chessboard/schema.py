@@ -252,12 +252,13 @@ CONSTRAINT_SCHEMA = volup.Schema({
 
 # These are the values that can be supplied under `component` in a service:
 COMPONENT_SELECTOR_SCHEMA_FIELDS = volup.Schema({
-    # Explicitely selecting a component by the provider-supplied `id`
-    # Ex. `id: rsCloudLB` explicitely selects a Rackspac Cloud Load Balancer
+    # Explicitly selecting a component by the provider-supplied `id`
+    # Ex. `id: rsCloudLB` explicitely selects a Rackspace Cloud Load Balancer
     volup.Optional('id'): volup.All(str, volup.Length(min=3, max=32)),
     # Selecting a component by the well-known application name (ex. wordpress)
     volup.Optional('name'): str,
-    # Selecting a component that supports a well-known interface
+    # Selecting a component that supports a well-known interface (this also
+    # requires resource_type)
     volup.Optional('interface'): volup.Any('*', *INTERFACE_TYPES),
     # Selecting a component by its type (ex. database)
     volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
