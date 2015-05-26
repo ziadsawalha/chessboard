@@ -1,0 +1,17 @@
+name: redis
+commands:
+  install: "apt-get update && apt-get install redis-server -y"
+  start: "redis-server"
+provides:
+  - resource_type: database
+    interface: redis
+    port:
+      default: 6379
+requires:
+  - resource_type: compute
+    relation: host
+    interface: linux
+    constraints:
+    - setting: os
+      value: ubuntu 14.04
+
