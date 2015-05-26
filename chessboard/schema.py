@@ -27,6 +27,7 @@ from yaml import scanner
 LOG = logging.getLogger(__name__)
 
 
+
 ###########################
 # Constants and utilities #
 ###########################
@@ -547,12 +548,74 @@ ENVIRONMENT_SCHEMA = DocumentedSchema({
     volup.Required('providers'): DictOf(dict)
 }, name='environment').register()
 
+COMPONENT_COMMANDS_SCHEMA = volup.Schema({
+    'start': str,
+    'install': str,
+    'stop': str,
+    'kill': str,
+    'test': str,
+})
+
+ENDPOINT_SCHEMA = volup.Schema({
+    'resource_type': volup.Any('*', *RESOURCE_TYPES),
+    'relation': volup.Any('reference', 'host'),
+    'interface': volup.Any(dict, *six.string_types),
+    'constraints': [CONSTRAINT_SCHEMA],
+    volup.Optional('port'): {'default': int},
+})
+
+
+FILE_SCHEMA = volup.Schema({
+    # TODO(larsbutler): there could also be a short form: <source>: <dest>
+    volup.Required('source'): str,
+    volup.Required('dest'): str,
+})
+
+
+COMPONENT_SCHEMA = volup.Schema({
+    volup.Optional('id'): str,
+    volup.Required('name'): str,
+    volup.Optional('files'): [FILE_SCHEMA],
+    # TODO(larsbutler): philosophical question: should it be "required"?
+    volup.Optional('commands'): COMPONENT_COMMANDS_SCHEMA,
+    volup.Required('provides'): [ENDPOINT_SCHEMA],
+    volup.Optional('requires'): [ENDPOINT_SCHEMA],
+})
+
+
+def Component(entry):
+    """Validate and convert components.
+
+    Instead of outputing a `dict` for each component, the schema should output
+    :class:`chessboard.components.catalog.Component` objects.
+    """
+    def convert(comp):
+        """Convert a component to a `Component` object.
+
+        :param comp:
+            The component definition, in `dict` form.
+        :param str name:
+            Name of the component.
+
+        :returns:
+            :class:`chessboard.components.catalog.Component` instance.
+        """
+        # Import here instead of at the module-level, to prevent circular
+        # imports.
+        from chessboard.components import catalog
+        component = COMPONENT_SCHEMA(comp)
+        return catalog.Component(**component)
+
+    return convert(entry)
+
+
 #: Top level Checkmatefile schema
 CHECKMATEFILE_SCHEMA = DocumentedSchema({
     volup.Optional('blueprint'): BLUEPRINT_SCHEMA,
     volup.Optional('environment'): ENVIRONMENT_SCHEMA,
     # TODO(larsbutler): Add the other sections, like `puts`
     volup.Optional('inputs'): dict,
+    volup.Optional('components'): [Component],
     volup.Optional('flavors'): dict,
     volup.Optional('resources'): dict,
     # temp store for YAML-referenced parts (then removed)
