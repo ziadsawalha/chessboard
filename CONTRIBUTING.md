@@ -110,6 +110,7 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 * All modues and methods **must be documented**.
 * All code must pass **PEP-8, PEP-257, flake8** checks with any exceptions explicitly noted and justified.
 * Follow the OpenStack Hacking Guidelines as documented in [HACKING.rst][hacking] and automated in our style tests using the `hacking` module.
+* For simple functions, put tests in the docstring to keep them self-contained.
 
 ## <a name="commit"></a> Git Commit Guidelines
 
