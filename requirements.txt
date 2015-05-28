@@ -7,3 +7,4 @@ pycrypto==2.6.1
 pyyaml
 six
 voluptuous
+docker-compose
