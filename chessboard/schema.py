@@ -85,7 +85,8 @@ RESOURCE_TYPES = [
 ]
 
 
-def DictOf(schema):
+class DictOf(volup.Schema):
+
     """Validate that all values in a dict adhere to the supplied schema.
 
     This allows schemas with a dictionary structure to be defined, where there
@@ -93,13 +94,14 @@ def DictOf(schema):
 
     Shamelessly copied from Checkmate and modified.
     """
-    def check(entry):
+
+    def __call__(self, entry):
         if not isinstance(entry, dict):
             raise volup.Invalid('value not a dict')
         errors = []
         for key, value in entry.items():
             try:
-                schema(value)
+                self.schema(value)
             except volup.MultipleInvalid as exc:
                 # Since the key can be arbitrary, we need to include it in the
                 # path so the error can be traced to a specific location.
@@ -109,7 +111,6 @@ def DictOf(schema):
         if errors:
             raise volup.MultipleInvalid(errors)
         return entry
-    return check
 
 
 def Coerce(type, msg=None):
