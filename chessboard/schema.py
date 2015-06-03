@@ -509,6 +509,15 @@ COMPONENT_SELECTOR_SCHEMA = volup.All(
     RequireOne(['id', 'name', 'resource_type'])
 )
 
+COMPONENT_SCHEMA = DocumentedSchema({
+    'id': str,
+    volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
+    volup.Optional('provider'): str,
+    volup.Optional('provides'): list,
+    volup.Optional('requires'): list,
+    volup.Optional('supports'): list,
+}, name='component').register()
+
 #: Schema for a member of `blueprint` -> `services`
 SERVICE_SCHEMA = DocumentedSchema({
     volup.Required('component'): COMPONENT_SELECTOR_SCHEMA,
@@ -516,6 +525,7 @@ SERVICE_SCHEMA = DocumentedSchema({
     volup.Optional('relations'): [RELATION_SCHEMA],
     volup.Optional('constraints'): [CONSTRAINT_SCHEMA],
     volup.Optional('display-name'): str,
+    volup.Optional('count'): int,
 }, name='service').register()
 
 #: Schema for `blueprint`
@@ -542,15 +552,32 @@ BLUEPRINT_SCHEMA = DocumentedSchema({
     },
 }, name='blueprint').register()
 
+ENVIRONMENT_SCHEMA = DocumentedSchema({
+    volup.Optional('name'): str,
+    volup.Required('providers'): DictOf(dict)
+}, name='environment').register()
+
 #: Top level Checkmatefile schema
 CHECKMATEFILE_SCHEMA = DocumentedSchema({
-    volup.Required('blueprint'): BLUEPRINT_SCHEMA,
-    # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
-    volup.Optional('environment'): object,
-    volup.Optional('inputs'): object,
-    volup.Optional('flavors'): object,
-    volup.Optional('include'): object,
+    volup.Optional('blueprint'): BLUEPRINT_SCHEMA,
+    volup.Optional('environment'): ENVIRONMENT_SCHEMA,
+    # TODO(larsbutler): Add the other sections, like `puts`
+    volup.Optional('inputs'): dict,
+    volup.Optional('flavors'): dict,
+    volup.Optional('include'): dict,
+    volup.Optional('resources'): dict,
 }, name='checkmateFile').register()
+
+
+DEPLOYMENT_SCHEMA = DocumentedSchema({
+    volup.Required('id'): str,
+    'status': volup.Any('NEW', 'PLANNED'),
+    volup.Optional('blueprint'): BLUEPRINT_SCHEMA,
+    volup.Optional('environment'): ENVIRONMENT_SCHEMA,
+    # TODO(larsbutler): Add the other sections, like `puts`
+    volup.Optional('resources'): dict,
+    volup.Optional('inputs'): dict,
+}, name='deployment').register()
 
 
 def generate_docs(docs=None):

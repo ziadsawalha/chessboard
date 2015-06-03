@@ -3,4 +3,5 @@ include setup.py
 include README.md
 include OVERVIEW.md
 include chessboard/schema_docs.yaml
+include chessboard/patterns.yaml
 global-exclude *.pyc *.sdx *.log *.db *.swp
