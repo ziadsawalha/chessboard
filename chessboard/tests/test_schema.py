@@ -398,29 +398,27 @@ class TestRelationSchema(unittest.TestCase):
           attributes:
             timeout: 300
         """)
-        _schema = volup.Schema([cb_schema.Relation(coerce=True)])
-        inspect(obj['relations'], _schema)
-        expected = {
-            'relations': [
-                {
-                    'service': 'db',
-                    'interface': 'mysql',
-                }, {
-                    'service': 'cache',
-                    'interface': 'redis',
-                    'connect-from': 'objects',
-                }, {
-                    'service': 'foo',
-                    'interface': 'varnish',
-                    'connect-from': 'sessions',
-                    'connect-to': 'persistent',
-                    'attributes': {
-                        'timeout': 300
-                    },
+        schema = volup.Schema([cb_schema.Relation()])
+        result = schema(obj['relations'])
+        expected = [
+            {
+                'service': 'db',
+                'interface': 'mysql',
+            }, {
+                'service': 'cache',
+                'interface': 'redis',
+                'connect-from': 'objects',
+            }, {
+                'service': 'foo',
+                'interface': 'varnish',
+                'connect-from': 'sessions',
+                'connect-to': 'persistent',
+                'attributes': {
+                    'timeout': 300
                 },
-            ]
-        }
-        self.assertEqual(obj, expected)
+            },
+        ]
+        self.assertEqual(result, expected)
 
     def test_relations_negative_dict(self):
         """Ensure dict not allowed as value."""

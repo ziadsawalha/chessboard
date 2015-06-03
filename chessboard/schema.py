@@ -146,11 +146,12 @@ class RequireOneInvalid(volup.Invalid):
     """At least one of a required set of keys is missing from a dict."""
 
 
-def RequireOne(keys):
+def RequireOne(keys):  # pylint: disable=C0103
     """Validate that at least on of the supplied keys exists on a dict."""
     def check(val):
+        """Validate data against this schema."""
         if any(([k in val for k in keys])):
-            return
+            return val
         raise RequireOneInvalid("one of '%s' is required" % ', '.join(keys))
     return check
 
@@ -264,15 +265,15 @@ class DocumentedSchema(volup.Schema):
 
     a) To create a voluptuous.Schema that has a name associated with it:
 
-        DocumentedSchema(Relation, name='relation')
+        DocumentedSchema(Relation(), name='relation')
 
     b) To create a voluptuous.Schema that can be looked up by name:
 
-        schema = DocumentedSchema(Relation, name='relation').register()
+        schema = DocumentedSchema(Relation(), name='relation').register()
 
     c) To output verbose messages:
 
-        schema = DocumentedSchema(Relation, name='relation').register()
+        schema = DocumentedSchema(Relation(), name='relation').register()
         try:
             schema(bad_data)
         except voluptuous.MultipleInvalid as exc:
@@ -460,7 +461,7 @@ def Relation(msg=None, coerce=False):
                 entry = changed
         return RELATION_LONG_SCHEMA(entry)
     return check
-RELATION_SCHEMA = DocumentedSchema(Relation, name='relation').register()
+RELATION_SCHEMA = DocumentedSchema(Relation(), name='relation').register()
 
 # TODO(larsbutler): This is the "long form" of constraint structure.
 # We need to define the "short form" which is:
