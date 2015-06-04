@@ -92,7 +92,7 @@ class TestTopology(unittest.TestCase):
             'LoadBalancer': [('App1', 'https'), ('App2', 'https'),
                              ('App3', 'http')],
         }
-        self.assertDictEqual(expected_relations, topo.relations)
+        self.assertDictEqual(expected_relations, topo.get_relations())
 
     def test_relations_invalid_service(self):
         """Relation refers to a missing service."""
@@ -131,8 +131,10 @@ class TestTopology(unittest.TestCase):
                     resource_type: database
                     interface: mysql""")
         contents = parser.load(checkmatefile)
+        topo = topology.Topology.from_deployment(contents)
         with self.assertRaises(topology.TopologyError) as terr:
-            topology.Topology.from_deployment(contents)
+            topo.get_relations()
+
         self.assertEqual(
             "Service 'App2' defines a relation to an unknown remote service "
             "'Database'.",
@@ -157,7 +159,7 @@ class TestTopology(unittest.TestCase):
                 interface: https""")
         contents = parser.load(checkmatefile)
         topo = topology.Topology.from_deployment(contents)
-        self.assertDictEqual({}, topo.relations)
+        self.assertDictEqual({}, topo.get_relations())
 
 
 if __name__ == '__main__':

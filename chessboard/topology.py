@@ -35,40 +35,32 @@ class Topology(classes.ExtensibleDict):
 
     __schema__ = schema.BLUEPRINT_SCHEMA
 
-    def __init__(self, *args, **kwargs):
-        """Create a new Topology."""
-        super(Topology, self).__init__(*args, **kwargs)
-        self.relations = {}
-        self._relate_services()
-
     @property
     def services(self):
-        """Return dict of services."""
-        return self.get('services', {})
+        """Return the `services` item as an attribute."""
+        return self.get('services')
 
-    @services.setter
-    def services(self, value):
-        """Set dict of services."""
-        self['services'] = value
+    def get_relations(self):
+        """Return map of all relations in all services.
 
-    def _relate_services(self):
-        """Wire up services, per the defined relations.
-
-        This performs some semantic validation checks on the application
+        This also performs some semantic validation checks on the application
         topology; specifically, we check to make sure relations refer to valid
         services. If a service is connected to another service which doesn't
-        exist, an error should be raised. Likewise, if a remote service exists
-        but does not expose an interface matching the interface of the
-        relation, an error should be raised.
+        exist, an error should be raised.
 
+        :returns: dict of service names with relations as `(target, interface)`
         :raises:
             :exception:`TopologyError` on invalid relations.
         """
-        for service_name, service in self.services.items():
-            relations = service.get('relations')
-            if relations:
+        relations = {}
+        services = self.services
+        if not services:
+            return relations
+        for service_name, service in services.items():
+            svc_relations = service.get('relations')
+            if svc_relations:
                 maps = []
-                for relation in relations:
+                for relation in svc_relations:
                     remote_service = relation['service']
                     remote_interface = relation['interface']
                     if remote_service not in self.services:
@@ -81,13 +73,9 @@ class Topology(classes.ExtensibleDict):
                         )
                     else:
                         # The remote service exists.
-                        # This is all we check for now; later in the pipeline,
-                        # we will need to check that the interfaces match, as
-                        # well as define in more detail the nature of the
-                        # relations between actual instances of resources in
-                        # a given deployment.
                         maps.append((remote_service, remote_interface))
-                self.relations[service_name] = maps
+                relations[service_name] = maps
+        return relations
 
     @staticmethod
     def from_deployment(deployment):
