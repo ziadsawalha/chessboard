@@ -25,6 +25,8 @@ setuptools.setup(
         'application model topology deployment manage orchestration '
         'configuration automation checkmate'
     ),
+    include_package_data=True,
+    data_files=[('chessboard', ['chessboard/schema_docs.yaml'])],
     classifiers=(
         'Development Status :: 1 - Planning',
         'Intended Audience :: Developers',

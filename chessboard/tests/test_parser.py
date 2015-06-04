@@ -63,3 +63,7 @@ MultiValidationError(
         self.assertEqual(expected_str, str(mve.exception))
         self.assertEqual(expected_repr, repr(mve.exception))
         self.assertEqual(expected_message, mve.exception.message)
+
+
+if __name__ == '__main__':
+    unittest.main()
