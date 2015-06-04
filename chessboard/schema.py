@@ -95,7 +95,7 @@ RESOURCE_TYPES = [
 ]
 
 
-class DictOf(volup.Schema):
+class DictOf(volup.Schema):  # pylint: disable=R0903
 
     """Validate that all values in a dict adhere to the supplied schema.
 
@@ -110,9 +110,10 @@ class DictOf(volup.Schema):
         if not isinstance(data, dict):
             raise volup.Invalid('value not a dict')
         errors = []
+        results = type(data)()
         for key, value in data.items():
             try:
-                self.schema(value)
+                results[key] = self.schema(value)
             except volup.MultipleInvalid as exc:
                 # Since the key can be arbitrary, we need to include it in the
                 # path so the error can be traced to a specific location.
@@ -121,24 +122,7 @@ class DictOf(volup.Schema):
                 errors.extend(exc.errors)
         if errors:
             raise volup.MultipleInvalid(errors)
-        return data
-
-
-def Coerce(type, msg=None):
-    """Coerce a value to a type.
-
-    If the type constructor throws a ValueError, the value will be marked as
-    Invalid.
-
-    Shamelessly copied from the voluptuous docs:
-    https://github.com/alecthomas/voluptuous/blob/master/README.md
-    """
-    def f(v):
-        try:
-            return type(v)
-        except ValueError:
-            raise volup.Invalid(msg or ('expected %s' % type.__name__))
-    return f
+        return results
 
 
 class RequireOneInvalid(volup.Invalid):
@@ -428,8 +412,8 @@ RELATION_LONG_SCHEMA = volup.Schema({
 })
 
 
-def Relation(msg=None, coerce=False):
-    """Validate a relation (coerce shorthand to long form).
+def Relation(msg=None):
+    """Validate a relation (coerces shorthand to long form).
 
     Supported formats:
 
@@ -438,6 +422,7 @@ def Relation(msg=None, coerce=False):
     -   or long form (see RELATION_LONG_SCHEMA)
     """
     def check(entry):
+        """Validate relation and return long-form for coercion."""
         if not isinstance(entry, dict):
             raise volup.Invalid('not a valid relation entry')
         if len(entry) == 1:
@@ -448,17 +433,13 @@ def Relation(msg=None, coerce=False):
             # shorthand (type: interface and optional connection source)
             if '#' in value:
                 interface, hashtag = value.split('#')[0:2]
-                changed = {
+                entry = {
                     'service': key,
                     'interface': interface,
                     'connect-from': hashtag,
                 }
             else:
-                changed = {'service': key, 'interface': value}
-            if coerce:
-                coerce_dict(entry, changed)
-            else:
-                entry = changed
+                entry = {'service': key, 'interface': value}
         return RELATION_LONG_SCHEMA(entry)
     return check
 RELATION_SCHEMA = DocumentedSchema(Relation(), name='relation').register()
@@ -477,14 +458,14 @@ CONSTRAINT_SCHEMA = DocumentedSchema({
     # Used to apply the constraint to a specific provider
     volup.Optional('provider'): str,
     # Optional constraint operators:
-    volup.Optional('greater-than'): Coerce(str),
-    volup.Optional('less-than'): Coerce(str),
-    volup.Optional('greater-than-or-equal-to'): Coerce(str),
-    volup.Optional('less-than-or-equal-to'): Coerce(str),
+    volup.Optional('greater-than'): object,
+    volup.Optional('less-than'): object,
+    volup.Optional('greater-than-or-equal-to'): object,
+    volup.Optional('less-than-or-equal-to'): object,
     volup.Optional('min-length'): int,
     volup.Optional('max-length'): int,
-    volup.Optional('allowed-chars'): Coerce(str),
-    volup.Optional('required-chars'): Coerce(str),
+    volup.Optional('allowed-chars'): volup.Coerce(str),
+    volup.Optional('required-chars'): volup.Coerce(str),
     volup.Optional('in'): list,
     volup.Optional('protocols'): list,
     volup.Optional('regex'): str,
@@ -508,14 +489,14 @@ COMPONENT_SELECTOR_SCHEMA_FIELDS = volup.Schema({
     volup.Optional('constraints'): [dict],
 })
 COMPONENT_SELECTOR_SCHEMA = volup.All(
-    volup.Schema(COMPONENT_SELECTOR_SCHEMA_FIELDS),
+    COMPONENT_SELECTOR_SCHEMA_FIELDS,
     # At least one of id, name, or resource_type is required. Without one of
     # these, the conditions will be too ambiguous to select a suitable
     # component. See individual field comments above on what each of these
     # means.
     # TODO(zns): if resource_type is supplied, then we should also require
     # interface
-    RequireOne(['id', 'name', 'resource_type'])
+    RequireOne(['id', 'name', 'resource_type']),
 )
 
 #: Schema for a member of `blueprint` -> `services`
