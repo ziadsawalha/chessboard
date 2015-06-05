@@ -27,7 +27,6 @@ from yaml import scanner
 LOG = logging.getLogger(__name__)
 
 
-
 ###########################
 # Constants and utilities #
 ###########################
