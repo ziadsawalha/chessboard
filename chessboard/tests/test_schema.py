@@ -88,14 +88,14 @@ class TestDictOf(unittest.TestCase):
                   # comp3 is missing a `component` key
                   relations:
                   - comp2: http""")
-        with self.assertRaises(volup.MultipleInvalid) as mi:
+        with self.assertRaises(volup.MultipleInvalid) as miexc:
             self.schema(content)
 
         expected_path = ['blueprint', 'services', 'comp3', 'component']
         # Some of the `path` elements may look like strings, but are actually
         # `voluptuous.Required` types; hence the map(str, ...).
         self.assertListEqual(expected_path,
-                             [str(x) for x in mi.exception.path])
+                             [str(x) for x in miexc.exception.path])
 
     def test_invalid_not_a_dict(self):
         """Test validation when the data is a list, not a dict.
@@ -118,12 +118,23 @@ class TestDictOf(unittest.TestCase):
                   component:
                     interface: http
                     type: baz""")
-        with self.assertRaises(volup.MultipleInvalid) as mi:
+        with self.assertRaises(volup.MultipleInvalid) as miexc:
             self.schema(content)
 
         expected_path = ['blueprint', 'services']
         self.assertListEqual(expected_path,
-                             [str(x) for x in mi.exception.path])
+                             [str(x) for x in miexc.exception.path])
+
+    def test_coercion(self):
+        """Test that coercion works and does not modify supplied argument."""
+        schema = cb_schema.DictOf(int)
+        data = {
+            'int': 1,
+            'string': '2'
+        }
+        results = schema(data)
+        self.assertEqual(data['string'], '2')
+        self.assertEqual(results['string'], 2)
 
 
 class TestRequireOne(unittest.TestCase):
@@ -133,9 +144,14 @@ class TestRequireOne(unittest.TestCase):
     def test_valid(self):
         """Test RequireOne passes valid data."""
         schema = cb_schema.RequireOne(['a', 'b'])
-        schema({'a': 1})
-        schema({'b': 1})
-        schema({'a': 1, 'b': 2})
+        try:
+            schema({'a': 1})
+            schema({'b': 1})
+            schema({'a': 1, 'b': 2})
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception as exc:  # pylint: disable=W0703
+            self.fail("RequireOne failed on valid data with %s" % exc)
 
     def test_invalid(self):
         """Test RequireOne fails invalid data."""
@@ -319,7 +335,12 @@ class TestCheckmatefileSchema(unittest.TestCase):
                     value: compute
                   - setting: disk
                     value: 50""")
-        parser.load(fileobj, schema=cb_schema.CHECKMATEFILE_SCHEMA)
+        try:
+            parser.load(fileobj, schema=cb_schema.CHECKMATEFILE_SCHEMA)
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception as exc:  # pylint: disable=W0703
+            self.fail("'parser.load' failed on valid data with %s" % exc)
 
     def test_invalid(self):
         """Test an extremely simple invalid blueprint."""
@@ -334,7 +355,7 @@ class TestCheckmatefileSchema(unittest.TestCase):
 ['test']: extra keys not allowed"""
         self.assertEqual(expected_message, mve.exception.message)
 
-    def test_numeric_blueprint_id_not_allowed(self):
+    def test_numeric_id_not_allowed(self):
         """Numeric blueprint id value are not allowed.
 
         The reason for this is because the number may be converted in
@@ -398,29 +419,27 @@ class TestRelationSchema(unittest.TestCase):
           attributes:
             timeout: 300
         """)
-        _schema = volup.Schema([cb_schema.Relation(coerce=True)])
-        inspect(obj['relations'], _schema)
-        expected = {
-            'relations': [
-                {
-                    'service': 'db',
-                    'interface': 'mysql',
-                }, {
-                    'service': 'cache',
-                    'interface': 'redis',
-                    'connect-from': 'objects',
-                }, {
-                    'service': 'foo',
-                    'interface': 'varnish',
-                    'connect-from': 'sessions',
-                    'connect-to': 'persistent',
-                    'attributes': {
-                        'timeout': 300
-                    },
+        schema = volup.Schema([cb_schema.Relation()])
+        result = schema(obj['relations'])
+        expected = [
+            {
+                'service': 'db',
+                'interface': 'mysql',
+            }, {
+                'service': 'cache',
+                'interface': 'redis',
+                'connect-from': 'objects',
+            }, {
+                'service': 'foo',
+                'interface': 'varnish',
+                'connect-from': 'sessions',
+                'connect-to': 'persistent',
+                'attributes': {
+                    'timeout': 300
                 },
-            ]
-        }
-        self.assertEqual(obj, expected)
+            },
+        ]
+        self.assertEqual(result, expected)
 
     def test_relations_negative_dict(self):
         """Ensure dict not allowed as value."""
