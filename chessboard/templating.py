@@ -130,15 +130,17 @@ def parse(template, extra_globals=None, **kwargs):
         result = template.render(**minimum_kwargs)
         # TODO(zns): exceptions in Jinja template sometimes missing
         # traceback
-    except StandardError as exc:
-        LOG.error(exc, exc_info=True)
-        error_message = "Template rendering failed: %s" % exc
-        raise exceptions.ChessboardError(
-            error_message, friendly_message="Your template had an error in it",
-            http_status=406)
     except TemplateError as exc:
         LOG.error(exc, exc_info=True)
         error_message = "Template had an error: %s" % exc
+        raise exceptions.ChessboardError(
+            error_message, friendly_message="Your template had an error in it",
+            http_status=406)
+    except (KeyboardInterrupt, SystemExit):
+        raise  # avoid getting handled as `Exception`
+    except Exception as exc:
+        LOG.error(exc, exc_info=True)
+        error_message = "Template rendering failed: %s" % exc
         raise exceptions.ChessboardError(
             error_message, friendly_message="Your template had an error in it",
             http_status=406)

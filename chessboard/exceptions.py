@@ -26,6 +26,8 @@ This is important to allow exceptions to flow back from the message queue
 tasks or other processes.
 """
 
+BLUEPRINT_ERROR = "Blueprint syntax error"  # remove this
+
 
 class ChessboardError(Exception):
 

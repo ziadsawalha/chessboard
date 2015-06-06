@@ -515,6 +515,7 @@ SERVICE_SCHEMA = DocumentedSchema({
     volup.Optional('relations'): [RELATION_SCHEMA],
     volup.Optional('constraints'): [CONSTRAINT_SCHEMA],
     volup.Optional('display-name'): str,
+    volup.Optional('count'): int,
 }, name='service').register()
 
 #: Schema for `blueprint`
@@ -548,13 +549,48 @@ ENVIRONMENT_SCHEMA = DocumentedSchema({
 
 #: Top level Checkmatefile schema
 CHECKMATEFILE_SCHEMA = DocumentedSchema({
-    volup.Required('blueprint'): BLUEPRINT_SCHEMA,
-    # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
-    volup.Optional('inputs'): object,
-    volup.Optional('flavors'): object,
-    volup.Optional('include'): object,
+    volup.Optional('blueprint'): BLUEPRINT_SCHEMA,
     volup.Optional('environment'): ENVIRONMENT_SCHEMA,
+    # TODO(larsbutler): Add the other sections, like `puts`
+    volup.Optional('inputs'): dict,
+    volup.Optional('flavors'): dict,
+    volup.Optional('resources'): dict,
+    # temp store for YAML-referenced parts (then removed)
+    volup.Optional('include'): dict,
 }, name='checkmateFile').register()
+
+DEPLOYMENT_SCHEMA = DocumentedSchema({
+    volup.Required('id'): str,
+    'name': object,
+    volup.Optional('blueprint'): volup.Any(BLUEPRINT_SCHEMA, None),
+    volup.Optional('environment'): ENVIRONMENT_SCHEMA,
+    volup.Optional('resources'): dict,
+    volup.Optional('inputs'): dict,
+    'key-pairs': object,
+
+    # Not yet ported
+    'live': object,
+    'meta-data': object,  # Used to store/show miscellaneous data
+    'check-limit-results': object,
+    'check-access-results': object,
+
+    # Run-time fields
+    'status': volup.Any('NEW', 'PLANNED'),
+    'created': object,
+    'created-by': object,
+    'flavors': object,
+    'display-outputs': object,
+    'workflow': object,
+    'operation': object,
+
+    # Legacy fields
+    'tenantId': object,
+    'error-messages': object,
+    'plan': object,
+    'operations-history': object,
+    'secrets': object,
+    'includes': object,  # temp store for YAML-referenced parts (then removed)
+}, required=False, name='deployment').register()
 
 
 def generate_docs(docs=None):

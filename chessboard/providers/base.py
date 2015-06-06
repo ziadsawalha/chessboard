@@ -15,7 +15,6 @@
 """Base Providers Class."""
 
 from abc import ABCMeta
-import itertools
 import logging
 
 from mongoquery import Query
@@ -66,15 +65,15 @@ class Provider(object):
         """Iterate over components that match supplied conditions."""
         if conditions:
             qry = Query(conditions)
-            return itertools.ifilter(qry.match, self.iter_components())
+            return six.moves.filter(qry.match, self.iter_components())
         else:
             return self.iter_components()
 
     def iter_components(self):
         """Iterable list of component."""
-        for cid, component in self._catalog.iteritems():
+        for cid, component in self._catalog.items():
             if 'id' not in component:
-                yield Component(component.items() + [('id', cid)],
+                yield Component(list(component.items()) + [('id', cid)],
                                 provider=self)
             else:
                 yield Component(component.copy(), provider=self)
@@ -91,8 +90,8 @@ class Provider(object):
         if service:
             if deployment._constrained_to_one(service):
                 name = "%s.%s" % (service, domain)
-            elif isinstance(index, int) or (isinstance(index, basestring) and
-                                            index.isdigit()):
+            elif isinstance(index, int) or (
+                    isinstance(index, six.string_types) and index.isdigit()):
                 name = "%s%02d.%s" % (service, int(index), domain)
             else:
                 name = "%s%s.%s" % (service, index, domain)
