@@ -1,4 +1,5 @@
 arrow==0.4.4
+Jinja2==2.7.3
 passlib==1.6.2
 pycrypto==2.6.1
 pyyaml
