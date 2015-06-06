@@ -499,6 +499,15 @@ COMPONENT_SELECTOR_SCHEMA = volup.All(
     RequireOne(['id', 'name', 'resource_type']),
 )
 
+COMPONENT_SCHEMA = DocumentedSchema({
+    'id': str,
+    volup.Optional('resource_type'): volup.Any('*', *RESOURCE_TYPES),
+    volup.Optional('provider'): str,
+    volup.Optional('provides'): list,
+    volup.Optional('requires'): list,
+    volup.Optional('supports'): list,
+}, name='component').register()
+
 #: Schema for a member of `blueprint` -> `services`
 SERVICE_SCHEMA = DocumentedSchema({
     volup.Required('component'): COMPONENT_SELECTOR_SCHEMA,
