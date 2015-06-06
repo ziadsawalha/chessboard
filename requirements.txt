@@ -1,5 +1,7 @@
 arrow==0.4.4
+eventlet==0.17.4
 Jinja2==2.7.3
+mongoquery
 passlib==1.6.2
 pycrypto==2.6.1
 pyyaml
