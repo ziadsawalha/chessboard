@@ -492,5 +492,33 @@ def inspect(obj, schema):
     return errors
 
 
+class TestInspect(unittest.TestCase):
+
+    """Test inspect() function in schema.py."""
+
+    def test_invalid_empty(self):
+        schema = volup.Schema({volup.Required("id"): str})
+        result = inspect({}, schema)
+        self.assertEqual(result, ["required key not provided @ data['id']"])
+
+    def test_invalid(self):
+        schema = volup.Schema({volup.Required("id"): str},
+                              extra=volup.ALLOW_EXTRA)
+        result = inspect({'A': 1}, schema)
+        self.assertEqual(result, ["required key not provided @ data['id']"])
+
+    def test_invalid_multiple(self):
+        schema = volup.Schema({volup.Required("id"): str})
+        result = inspect({'A': 1}, schema)
+        self.assertItemsEqual(result, [
+            "extra keys not allowed @ data['A']",
+            "required key not provided @ data['id']"])
+
+    def test_valid(self):
+        schema = volup.Schema({volup.Required("id"): str})
+        result = inspect({'id': ''}, schema)
+        self.assertEqual(result, [])
+
+
 if __name__ == '__main__':
     unittest.main()

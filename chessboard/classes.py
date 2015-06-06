@@ -20,6 +20,22 @@ ExtensibleDict is a dict that supports the following extra features:
 - __schema__ callable may also coerce the dict into a defined structure.
 - subclasses will not break automatic serialization by json or PyYAML.
 
+Sample usage to create a dict-like class that stores its values in items, but
+also has attribute-like accessors:
+
+    class MyClass(classes.ExtensibleDict):
+
+        '''My awesome class'''
+
+    @property
+    def foo(self):
+        return self['foo']
+
+    >>> MyClass({'foo': 'bar'}).foo
+    'bar'
+
+TODO(zns): validate on item edits
+
 Note: this comes from [morpheus](https://github.com/ziadsawalha/morpheus). The
 conditional handling of the `yaml` import makes this module work even if used
 in an environment without yaml installed. This is not going to be an issue in

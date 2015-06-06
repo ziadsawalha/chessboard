@@ -16,6 +16,7 @@
 
 from __future__ import print_function
 
+import collections
 import logging
 
 from chessboard.topology import Topology
@@ -106,15 +107,15 @@ class Deployment(classes.ExtensibleDict):
                 if 'private_key' in value and 'certificate' not in value:
                     msg = ("If a private key is supplied for '%s', then a "
                            "certificate is also required" % key)
-                    raise exceptions.CheckmateValidationException(msg)
+                    raise exceptions.ChessboardValidationError(msg)
                 if 'certificate' in value and 'private_key' not in value:
-                    raise exceptions.CheckmateValidationException(
+                    raise exceptions.ChessboardValidationError(
                         "If a certificate is supplied for '%s', then a "
                         "private key is also required" % key)
                 if 'intermediate_key' in value and (
                         'private_key' not in value or
                         'certificate' not in value):
-                    raise exceptions.CheckmateValidationException(
+                    raise exceptions.ChessboardValidationError(
                         "If an intermediate key is supplied for '%s', then a "
                         "certificate and private key are also required" % key)
 
@@ -137,7 +138,7 @@ class Deployment(classes.ExtensibleDict):
             )
         if required:
             if key not in bp_inputs:
-                raise exceptions.CheckmateValidationException(
+                raise exceptions.ChessboardValidationError(
                     "Required blueprint input '%s' not supplied" % key)
 
     def validate_input_constraints(self):
@@ -180,8 +181,7 @@ class Deployment(classes.ExtensibleDict):
                                     value if option.get('type') != 'password'
                                     else '*******',
                                     constraint.message))
-                            raise exceptions.CheckmateValidationException(msg)
-
+                            raise exceptions.ChessboardValidationError(msg)
 
     def get_setting(self, name, resource_type=None, service_name=None,
                     provider_key=None, relation=None, default=None):
@@ -204,7 +204,7 @@ class Deployment(classes.ExtensibleDict):
         :param default: value to return if no match found
         """
         if not name:
-            raise exceptions.CheckmateValidationException(
+            raise exceptions.ChessboardValidationError(
                 "setting() was called with a blank value. Check your map "
                 "file for bad calls to 'setting'"
             )
@@ -587,7 +587,7 @@ class Deployment(classes.ExtensibleDict):
 
             if value is not None:
                 result = None
-                if isinstance(value, cm_inputs.Input):
+                if isinstance(value, Input):
                     if hasattr(value, attribute):
                         result = getattr(value, attribute)
                 elif isinstance(value, collections.Mapping):
@@ -598,7 +598,7 @@ class Deployment(classes.ExtensibleDict):
                                     "obtaining option '%s' since value is " \
                                     "of type %s" % (attribute, name,
                                                     type(value).__name__)
-                    raise exceptions.CheckmateException(
+                    raise exceptions.ChessboardError(
                         error_message,
                         friendly_message=exceptions.BLUEPRINT_ERROR)
                 if result is not None:
@@ -617,7 +617,7 @@ class Deployment(classes.ExtensibleDict):
         if 'type' not in option:
             return value
         if option['type'] == 'url':
-            result = cm_inputs.Input(value)
+            result = Input(value)
             if isinstance(value, basestring):
                 result.parse_url()
             return result

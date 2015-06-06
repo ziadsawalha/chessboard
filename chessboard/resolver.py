@@ -392,7 +392,7 @@ class Planner(object):
                         if not instance['name']:
                             error_message = ("Name must be specified for the "
                                              "'%s' user resource" % key)
-                            raise exceptions.CheckmateException(
+                            raise exceptions.ChessboardError(
                                 error_message,
                                 friendly_message=error_message)
                     else:
@@ -451,7 +451,7 @@ class Planner(object):
                 else:
                     error_message = ("Could not find provider for the '%s' "
                                      "resource" % key)
-                    raise exceptions.CheckmateException(
+                    raise exceptions.ChessboardError(
                         error_message, friendly_message=error_message)
                     # Add it to resources
             resources[str(key)] = result
@@ -576,7 +576,7 @@ class Planner(object):
                                                     resource['hosted_on'],
                                                     target['index'])
                 )
-                raise exceptions.CheckmateException(
+                raise exceptions.ChessboardError(
                     error_message, friendly_message=BLUEPRINT_ERROR)
 
             resource['hosted_on'] = target['index']
@@ -606,14 +606,14 @@ class Planner(object):
             try:
                 component = self.identify_component(
                     definition, self.environment, context)
-            except exceptions.CheckmateException as cm_exc:
+            except exceptions.ChessboardError as cm_exc:
                 LOG.info("Error resolving component: %s", cm_exc)
                 raise
             except Exception as exc:
                 raise
                 LOG.exception(exc)
                 LOG.info("Error resolving component: %s", exc)
-                raise exceptions.CheckmateException(
+                raise exceptions.ChessboardError(
                     str(exc),
                     "Could not find a provider that can create a component in "
                     "the %s service" % service.get('display-name',
@@ -813,7 +813,7 @@ class Planner(object):
             if not component:
                 error_message = (
                     "Could not resolve component '%s'" % definition)
-                raise exceptions.CheckmateException(
+                raise exceptions.ChessboardError(
                     error_message, friendly_message=error_message)
             LOG.debug("Component '%s' identified as '%s'  to satisfy "
                       "requirement '%s' for service '%s'", definition,
@@ -905,7 +905,7 @@ class Planner(object):
                 definition, self.environment, context)
             if not found:
                 error_message = "Could not resolve component '%s'" % definition
-                raise exceptions.CheckmateException(
+                raise exceptions.ChessboardError(
                     error_message, friendly_message=error_message)
             LOG.debug("Component '%s' identified as '%s'  to satisfy "
                       "requirement '%s' for service '%s' for extra component "
@@ -918,7 +918,7 @@ class Planner(object):
                        "for service '%s'. The component '%s' has been "
                        "encountered already" % signature)
                 LOG.debug(msg, extra={'data': self})
-                raise exceptions.CheckmateException(msg, friendly_message=msg)
+                raise exceptions.ChessboardError(msg, friendly_message=msg)
             history.append(signature)
             # Add it to the 'extra-components' list in the service
             service['extra-components'][requirement_key] = found
@@ -1001,7 +1001,7 @@ class Planner(object):
         found = environment.find_component(definition, context)
         if not found:
             error_message = "Could not resolve component '%s'" % definition
-            raise exceptions.CheckmateException(error_message,
+            raise exceptions.ChessboardError(error_message,
                                                 friendly_message=error_message)
         assert 'id' in found
         assert 'provider' in found

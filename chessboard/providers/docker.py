@@ -14,6 +14,9 @@
 
 """Docker provider for launching applications from a Checkmatefile."""
 
+from __future__ import print_function
+
+import copy
 from collections import namedtuple
 import os
 import shutil
@@ -24,6 +27,8 @@ import yaml
 
 from chessboard.components import catalog as cb_catalog
 from chessboard import parser
+from chessboard.providers import base
+from chessboard import utils
 
 Relation = namedtuple('Relation', ['service', 'interface'])
 
@@ -38,6 +43,29 @@ FROM %(distro)s:%(distro_version)s
 
 CMD %(cmd)s
 """
+
+
+DEFAULT_CATALOG = utils.yaml_to_dict("""
+docker_generic:
+  resource_type: application
+docker_mysql:
+  resource_type: database
+  provides:
+  - database: mysql
+
+""")
+
+
+class Provider(base.Provider):
+
+    """Provides Docker Containers."""
+
+    def __init__(self, key=None, catalog=None, constraints=None):
+        if catalog is None:
+            catalog = copy.deepcopy(DEFAULT_CATALOG)
+        super(Provider, self).__init__(key=key,
+                                       catalog=catalog,
+                                       constraints=constraints)
 
 
 class TopologyError(Exception):
@@ -100,7 +128,7 @@ class DockerProvider(object):
                 dockerfile.write(_component_to_dockerfile(comp))
             dockerfile_dirs[comp_name] = comp_path
         # Now generate docker-compose.yml
-        relations = _get_relations(cmfile)
+        relations = cmfile.get_relations()
         docker_compose_obj = _make_docker_compose(
             cmfile, dockerfile_dirs, relations
         )
@@ -315,48 +343,6 @@ def _include_components(cmfile, catalog):
                 components.append(catalog_component)
 
 
-def _get_relations(cmfile):
-    """Parse relations from the `services` defined in the Checkmatefile.
-
-    :param cmfile:
-        Parsed Checkmatefile contents, in object form.
-
-    :returns:
-        `dict` of relation information. Keys are the name of a service which
-        relates to one or more other services, and values are lists of
-        :class:`Relation` namedtuples, which define the remote service and
-        remote interface.
-    """
-    relations = {}
-    services = cmfile['blueprint']['services']
-
-    for service_name, service in services.items():
-        if service.get('relations'):
-            svc_relations = []
-            for relat in service.get('relations'):
-                remote_service = relat['service']
-                remote_interface = relat['interface']
-                if remote_service not in services:
-                    # The remote service we want to connect to doesn't
-                    # exist.
-                    raise TopologyError(
-                        "Service '%(sn)s' defines a relation to an unknown"
-                        " remote service '%(rs)s'."
-                        % dict(sn=service_name, rs=remote_service)
-                    )
-                else:
-                    # The remote service exists.
-                    # This is all we check for now; later in the pipeline,
-                    # we will need to check that the interfaces match, as
-                    # well as define in more detail the nature of the
-                    # relations between actual instances of resources in
-                    # a given deployment.
-                    rel = Relation(remote_service, remote_interface)
-                    svc_relations.append(rel)
-            relations[service_name] = svc_relations
-    return relations
-
-
 def _make_docker_compose(cmfile, dockerfile_dirs, relations):
     """Build a dictionary of docker-compose file contents.
 
@@ -368,8 +354,8 @@ def _make_docker_compose(cmfile, dockerfile_dirs, relations):
         `dict` of Dockerfile directories, keyed by the service name.
     :param relations:
         Relation information required to "wire up" services. Relation info
-        should come from :func:`_get_relations`, or at least be in the same
-        format.
+        should come from :module:`chessboard.topology.Topology.get_relations`,
+        or at least be in the same format.
 
     :returns:
         `dict` containing the data to dump to a docker-compose.yml file,

@@ -373,6 +373,10 @@ class DocumentedSchema(volup.Schema):
         return self.registered_types[type_name]
 
 
+def schema_from_list(keys_list):
+    """Generate a schema from a list of keys."""
+    return volup.Schema(dict((key, object) for key in keys_list))
+
 ######################
 # Schema definitions #
 ######################
@@ -680,3 +684,10 @@ def generate_docs(docs=None):
 
 %s
 """ % ('  \n'.join(toc), '\n\n'.join(body))
+
+if __name__ == "__main__":
+    # Check key ('lb) and index (0)
+    print CHECKMATEFILE_SCHEMA.get_field_schema('blueprint')
+    print BLUEPRINT_SCHEMA
+    print CHECKMATEFILE_SCHEMA.find_schema(
+        ['blueprint', 'services', 'lb', 'constraints', 0, 'foo'])
