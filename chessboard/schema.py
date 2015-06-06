@@ -541,14 +541,19 @@ BLUEPRINT_SCHEMA = DocumentedSchema({
     },
 }, name='blueprint').register()
 
+ENVIRONMENT_SCHEMA = DocumentedSchema({
+    volup.Optional('name'): str,
+    volup.Required('providers'): DictOf(dict)
+}, name='environment').register()
+
 #: Top level Checkmatefile schema
 CHECKMATEFILE_SCHEMA = DocumentedSchema({
     volup.Required('blueprint'): BLUEPRINT_SCHEMA,
     # TODO(larsbutler): Add the other sections, like `environment` and `inputs`
-    volup.Optional('environment'): object,
     volup.Optional('inputs'): object,
     volup.Optional('flavors'): object,
     volup.Optional('include'): object,
+    volup.Optional('environment'): ENVIRONMENT_SCHEMA,
 }, name='checkmateFile').register()
 
 
